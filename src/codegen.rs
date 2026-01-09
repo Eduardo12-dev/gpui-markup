@@ -68,8 +68,7 @@ fn append_attributes(mut output: TokenStream, attributes: &[Attribute]) -> Token
     for attr in attributes {
         output = match attr {
             Attribute::Flag(name) => quote! { #output.#name() },
-            Attribute::KeyValue { key, value } => quote! { #output.#key(#value) },
-            Attribute::KeyMultiValue { key, values } => quote! { #output.#key(#(#values),*) },
+            Attribute::KeyValue { key, values } => quote! { #output.#key(#(#values),*) },
         };
     }
     output

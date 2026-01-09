@@ -45,11 +45,8 @@ pub struct ExprElement {
 pub enum Attribute {
     /// Flag attribute: `flex`, `cursor_pointer`, etc.
     Flag(Ident),
-    /// Key-value attribute: `w={px(200.0)}`, `bg={theme.secondary}`, etc.
-    KeyValue { key: Ident, value: Expr },
-    /// Multi-value attribute: `when={cond, |s| s.bg(...)}`, etc.
-    /// Expands to `.when(cond, |s| s.bg(...))`
-    KeyMultiValue { key: Ident, values: Vec<Expr> },
+    /// Key-value attribute: `w={px(200.0)}`, `when={cond, fn}`, etc.
+    KeyValue { key: Ident, values: Vec<Expr> },
 }
 
 /// A child of an element.

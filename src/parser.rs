@@ -169,7 +169,6 @@ fn parse_attribute(input: ParseStream) -> Result<Attribute> {
     let key = input.call(Ident::parse_any)?;
 
     if input.peek(Token![=]) {
-        // Key-value or multi-value attribute
         input.parse::<Token![=]>()?;
         let content;
         braced!(content in input);
@@ -185,14 +184,7 @@ fn parse_attribute(input: ParseStream) -> Result<Attribute> {
             }
         }
 
-        if values.len() == 1 {
-            Ok(Attribute::KeyValue {
-                key,
-                value: values.pop().unwrap(),
-            })
-        } else {
-            Ok(Attribute::KeyMultiValue { key, values })
-        }
+        Ok(Attribute::KeyValue { key, values })
     } else {
         Ok(Attribute::Flag(key))
     }
