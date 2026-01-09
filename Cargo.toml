@@ -5,20 +5,21 @@ edition = "2024"
 authors = ["Ray <i@mk1.io>"]
 license = "MIT"
 description = "A declarative markup DSL for building GPUI applications"
+repository = "https://github.com/so1ve/gpui-markup"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "2", features = ["full", "parsing", "extra-traits"] }
-quote = "1"
-proc-macro2 = "1"
 proc-macro-error2 = "2"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full", "parsing", "extra-traits"] }
 
 [dev-dependencies]
-trybuild = "1"
 gpui = "0.2.2"
 insta = "1"
+trybuild = "1"
 
 [lints.clippy]
 all = "warn"
