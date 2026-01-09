@@ -24,7 +24,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run cargo fmt
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml
+        run: cargo fmt
 
       - uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
         with:
