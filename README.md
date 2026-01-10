@@ -120,6 +120,22 @@ ui! {
 // -> div().child("Header").children(items).child("Footer")
 ```
 
+### Method Calls
+
+Use `{.method(args)}` to insert method calls at any position in the children:
+
+```rust
+ui! {
+    <div>
+        {"static child"}
+        {.when(condition, |s| s.child("dynamic child"))}
+    </div>
+}
+// -> div().child("static child").when(condition, |s| s.child("dynamic child"))
+```
+
+This is useful when you need to call methods like `.when()` after some children have been added, giving you full control over the method call order.
+
 ### Comments
 
 Use `{/* ... */}` for JSX-style comments:
@@ -233,6 +249,7 @@ The `ui!` macro transforms the JSX-like syntax into GPUI's builder pattern at co
 | `<div when={a, b}/>` | `div().when(a, b)` |
 | `<div>{a}{b}</div>` | `div().child(a).child(b)` |
 | `<div>{..items}</div>` | `div().children(items)` |
+| `<div>{.method(x)}</div>` | `div().method(x)` |
 | `<deferred>{e}</deferred>` | `deferred(e.into_any_element())` |
 | `<Foo/>` | `Foo::new()` |
 | `<{expr}/>` | `expr` |

@@ -283,15 +283,15 @@ fn is_closing_tag(input: ParseStream) -> bool {
     input.peek(Token![<]) && input.peek2(Token![/])
 }
 
-/// Parse a single child: `{expr}`, `{..expr}` (spread), `{/* comment */}`
-/// (skipped), or nested element
+/// Parse a single child: `{expr}`, `{..expr}` (spread), `{.method(...)}`
+/// (method call), `{/* comment */}` (skipped), or nested element
 fn parse_child(input: ParseStream) -> Result<Option<Child>> {
     if input.peek(Token![<]) {
         // Nested element
         let element = input.parse::<Element>()?;
         Ok(Some(Child::Element(element)))
     } else if input.peek(Brace) {
-        // Expression child, spread, or comment
+        // Expression child, spread, method call, or comment
         let content;
         braced!(content in input);
         // Empty braces `{}` are treated as comments (from `{/* ... */}`)
@@ -302,6 +302,26 @@ fn parse_child(input: ParseStream) -> Result<Option<Child>> {
             content.parse::<Token![..]>()?;
             let expr: Expr = content.parse()?;
             Ok(Some(Child::Spread(expr)))
+        } else if content.peek(Token![.]) {
+            // Method call: {.method(args)}
+            content.parse::<Token![.]>()?;
+            let name = content.call(Ident::parse_any)?;
+
+            // Parse arguments in parentheses
+            let args_content;
+            syn::parenthesized!(args_content in content);
+            let mut args = Vec::new();
+            if !args_content.is_empty() {
+                args.push(args_content.parse()?);
+                while args_content.peek(Token![,]) {
+                    args_content.parse::<Token![,]>()?;
+                    if !args_content.is_empty() {
+                        args.push(args_content.parse()?);
+                    }
+                }
+            }
+
+            Ok(Some(Child::MethodCall { name, args }))
         } else {
             let expr: Expr = content.parse()?;
             Ok(Some(Child::Expression(expr)))
@@ -417,6 +437,22 @@ mod tests {
         if let Element::Native(el) = markup.element {
             assert_eq!(el.children.len(), 1);
             assert!(matches!(el.children[0], Child::Spread(_)));
+        } else {
+            panic!("Expected Native element");
+        }
+    }
+
+    #[test]
+    fn test_parse_method_call() {
+        let input: proc_macro2::TokenStream = quote::quote! {
+            <div>
+                {.when(cond, |d| d.flex())}
+            </div>
+        };
+        let markup: Markup = syn::parse2(input).unwrap();
+        if let Element::Native(el) = markup.element {
+            assert_eq!(el.children.len(), 1);
+            assert!(matches!(el.children[0], Child::MethodCall { .. }));
         } else {
             panic!("Expected Native element");
         }

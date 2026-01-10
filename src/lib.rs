@@ -88,6 +88,20 @@ use crate::ast::Markup;
 /// // -> div().child("Header").children(items).child("Footer")
 /// ```
 ///
+/// ## Method Calls
+///
+/// Use `{.method(args)}` to insert method calls at any position:
+///
+/// ```ignore
+/// ui! {
+///     <div>
+///         {"static child"}
+///         {.when(condition, |d| d.child("dynamic child"))}
+///     </div>
+/// }
+/// // -> div().child("static child").when(condition, |d| d.child("dynamic child"))
+/// ```
+///
 /// ## Components
 ///
 /// ```ignore

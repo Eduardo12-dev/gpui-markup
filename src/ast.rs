@@ -69,4 +69,6 @@ pub enum Child {
     Expression(Expr),
     /// A spread expression: `{..expr}` where expr is iterable
     Spread(Expr),
+    /// A method call: `{.method(args)}`
+    MethodCall { name: Ident, args: Vec<Expr> },
 }

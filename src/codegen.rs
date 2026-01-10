@@ -88,13 +88,20 @@ impl ToTokens for NativeElement {
 
 impl ToTokens for DeferredElement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let child = &self.child;
         let name = &self.open_name;
         // Don't use `generate_base_with_spans` here because `deferred()` has an `impl
         // Trait` parameter. Using it as a path statement (e.g., `deferred;`)
         // causes Rust to attempt type inference, which fails with "type
         // annotations needed" error.
-        let output = quote! { #name((#child).into_any_element()) };
+        let child_tokens = match self.child.as_ref() {
+            Child::Element(element) => quote! { #element },
+            Child::Expression(expr) => quote! { #expr },
+            // Spread and MethodCall don't make sense for deferred
+            Child::Spread(_) | Child::MethodCall { .. } => {
+                unreachable!("deferred only accepts Element or Expression")
+            }
+        };
+        let output = quote! { #name((#child_tokens).into_any_element()) };
         tokens.extend(output);
     }
 }
@@ -131,15 +138,6 @@ impl ToTokens for ExprElement {
     }
 }
 
-impl ToTokens for Child {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Self::Element(element) => element.to_tokens(tokens),
-            Self::Expression(expr) | Self::Spread(expr) => expr.to_tokens(tokens),
-        }
-    }
-}
-
 fn append_attributes(mut output: TokenStream, attributes: &[Attribute]) -> TokenStream {
     for attr in attributes {
         output = match attr {
@@ -156,6 +154,7 @@ fn append_children(mut output: TokenStream, children: &[Child]) -> TokenStream {
             Child::Element(element) => quote! { #output.child(#element) },
             Child::Expression(expr) => quote! { #output.child(#expr) },
             Child::Spread(expr) => quote! { #output.children(#expr) },
+            Child::MethodCall { name, args } => quote! { #output.#name(#(#args),*) },
         };
     }
     output
@@ -329,6 +328,25 @@ mod tests {
                 {"Header"}
                 {..items}
                 {"Footer"}
+            </div>
+        }));
+    }
+
+    #[test]
+    fn test_method_call() {
+        assert_snapshot!(generate(quote::quote! {
+            <div>
+                {"static"}
+                {.when(cond, |d| d.child("dynamic"))}
+            </div>
+        }));
+    }
+
+    #[test]
+    fn test_method_call_no_args() {
+        assert_snapshot!(generate(quote::quote! {
+            <div>
+                {.flex()}
             </div>
         }));
     }
