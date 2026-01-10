@@ -2,4 +2,4 @@
 source: src/codegen.rs
 expression: "generate(quote::quote! { <div>{\"Hello\"}</div> })"
 ---
-div () . child ("Hello")
+{ # [allow (path_statements)] div ; div () } . child ("Hello")

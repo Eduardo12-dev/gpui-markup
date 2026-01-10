@@ -1,0 +1,5 @@
+---
+source: src/codegen.rs
+expression: "generate(quote::quote! { <Container> <div>{\"Content\"}</div> </Container> })"
+---
+{ # [allow (path_statements)] Container ; Container :: new () } . child ({ # [allow (path_statements)] div ; div () } . child ("Content"))

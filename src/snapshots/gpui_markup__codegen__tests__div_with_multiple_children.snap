@@ -2,4 +2,4 @@
 source: src/codegen.rs
 expression: "generate(quote::quote! { <div> {\"First\"} {\"Second\"} </div> })"
 ---
-div () . children ([("First") . into_any_element () , ("Second") . into_any_element ()])
+{ # [allow (path_statements)] div ; div () } . children ([("First") . into_any_element () , ("Second") . into_any_element ()])

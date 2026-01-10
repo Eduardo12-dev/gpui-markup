@@ -2,4 +2,4 @@
 source: src/codegen.rs
 expression: "generate(quote::quote! { <div flex> <div>{\"Inner\"}</div> </div> })"
 ---
-div () . flex () . child (div () . child ("Inner"))
+{ # [allow (path_statements)] div ; div () } . flex () . child ({ # [allow (path_statements)] div ; div () } . child ("Inner"))
