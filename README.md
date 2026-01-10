@@ -187,6 +187,22 @@ ui! {
 }
 ```
 
+### Nested Macros
+
+When an attribute accepts a closure that returns an element (e.g. for a list delegate), you can use the `ui!` macro inside that closure:
+
+```rust
+ui! {
+    <List
+        delegate={move |ix| ui! {
+            <ListItem>
+                {"Item "}{ix}
+            </ListItem>
+        }}
+    />
+}
+```
+
 ## How It Works
 
 The `ui!` macro transforms the JSX-like syntax into GPUI's builder pattern at compile time:
