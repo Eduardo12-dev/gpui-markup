@@ -12,9 +12,7 @@ use crate::ast::{
 fn native_element_type(name: &str) -> &'static str {
     match name {
         "div" => "Div",
-        "img" => "Img",
         "svg" => "Svg",
-        "canvas" => "Canvas",
         "anchored" => "Anchored",
         _ => unreachable!("Unknown native element: {name}"),
     }
@@ -297,21 +295,9 @@ mod tests {
     }
 
     #[test]
-    fn test_img() {
-        assert_snapshot!(generate(quote::quote! { <img src={image_source}/> }));
-    }
-
-    #[test]
     fn test_svg() {
         assert_snapshot!(generate(
             quote::quote! { <svg path={icon_path} size={px(24.0)}/> }
-        ));
-    }
-
-    #[test]
-    fn test_canvas() {
-        assert_snapshot!(generate(
-            quote::quote! { <canvas w={px(100.0)} h={px(100.0)}/> }
         ));
     }
 

@@ -11,7 +11,7 @@ pub struct Markup {
 /// An element in the markup tree.
 #[derive(Debug)]
 pub enum Element {
-    /// Native elements: `<div>`, `<img>`, `<svg>`, `<canvas>`, `<anchored>`
+    /// Native elements: `<div>`, `<svg>`, `<anchored>`
     Native(NativeElement),
     /// `<deferred>`
     Deferred(DeferredElement),

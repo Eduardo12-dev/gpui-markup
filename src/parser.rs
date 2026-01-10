@@ -12,7 +12,7 @@ use crate::ast::{
 };
 
 /// Native GPUI element names
-const NATIVE_ELEMENTS: &[&str] = &["div", "img", "svg", "canvas", "anchored"];
+const NATIVE_ELEMENTS: &[&str] = &["div", "svg", "anchored"];
 
 impl Parse for Markup {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -43,7 +43,7 @@ impl Parse for Element {
             } else {
                 abort!(
                     ident.span(),
-                    "Unknown element '{}'. Use native elements (div, img, svg, canvas, anchored, deferred) or PascalCase for components.",
+                    "Unknown element '{}'. Use native elements (div, svg, anchored, deferred) or PascalCase for components.",
                     name
                 );
             }
@@ -330,19 +330,6 @@ mod tests {
         let markup: Markup = syn::parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.children.len(), 1);
-        } else {
-            panic!("Expected Native element");
-        }
-    }
-
-    #[test]
-    fn test_parse_img() {
-        let input: proc_macro2::TokenStream = quote::quote! {
-            <img src={image_source}/>
-        };
-        let markup: Markup = syn::parse2(input).unwrap();
-        if let Element::Native(el) = markup.element {
-            assert_eq!(el.open_name.to_string(), "img");
         } else {
             panic!("Expected Native element");
         }
