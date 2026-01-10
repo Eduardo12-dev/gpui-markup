@@ -6,7 +6,10 @@ use syn::parse::{Parse, ParseStream};
 use syn::token::Brace;
 use syn::{Expr, Ident, Result, Token, braced};
 
-use crate::ast::{Attribute, Child, ComponentElement, Element, ExprElement, Markup, NativeElement};
+use crate::ast::{
+    Attribute, Child, ComponentElement, DeferredElement, Element, ExprElement, Markup,
+    NativeElement,
+};
 
 /// Native GPUI element names
 const NATIVE_ELEMENTS: &[&str] = &["div", "img", "svg", "canvas", "anchored"];
@@ -31,14 +34,16 @@ impl Parse for Element {
             let ident = input.call(Ident::parse_any)?;
             let name = ident.to_string();
 
-            if NATIVE_ELEMENTS.contains(&name.as_str()) {
+            if name == "deferred" {
+                parse_deferred_element(input, ident)
+            } else if NATIVE_ELEMENTS.contains(&name.as_str()) {
                 parse_native_element(input, ident)
             } else if is_component_name(&name) {
                 parse_component_element(input, ident)
             } else {
                 abort!(
                     ident.span(),
-                    "Unknown element '{}'. Use native elements (div, img, svg, canvas, anchored) or PascalCase for components.",
+                    "Unknown element '{}'. Use native elements (div, img, svg, canvas, anchored, deferred) or PascalCase for components.",
                     name
                 );
             }
@@ -93,6 +98,37 @@ fn parse_native_element(input: ParseStream, open_name: Ident) -> Result<Element>
         close_name: Some(closing_ident),
         attributes,
         children,
+    }))
+}
+
+fn parse_deferred_element(input: ParseStream, open_name: Ident) -> Result<Element> {
+    // deferred cannot be self-closing - it must have exactly one child
+    if input.peek(Token![/]) {
+        abort!(open_name.span(), "<deferred> must have exactly one child");
+    }
+
+    // Opening tag: <deferred>
+    input.parse::<Token![>]>()?;
+
+    let child = parse_child(input)?;
+
+    // Closing tag: </deferred>
+    input.parse::<Token![<]>()?;
+    input.parse::<Token![/]>()?;
+    let closing_ident = input.call(Ident::parse_any)?;
+    if closing_ident != "deferred" {
+        abort!(
+            closing_ident.span(),
+            "Mismatched closing tag. Expected </deferred>, found </{}>",
+            closing_ident
+        );
+    }
+    input.parse::<Token![>]>()?;
+
+    Ok(Element::Deferred(DeferredElement {
+        open_name,
+        close_name: Some(closing_ident),
+        child: Box::new(child),
     }))
 }
 

@@ -1,7 +1,7 @@
 //! Basic syntax tests for gpui-markup.
 
 use gpui::prelude::FluentBuilder;
-use gpui::{FontWeight, InteractiveElement, IntoElement, ParentElement, Styled, div, px};
+use gpui::{FontWeight, InteractiveElement, IntoElement, ParentElement, Styled, deferred, div, px};
 use gpui_markup::ui;
 
 #[test]
@@ -126,5 +126,15 @@ fn test_method_call_as_child() {
         <div>
             {format!("Hello, {}!", name)}
         </div>
+    };
+}
+
+#[test]
+fn test_deferred() {
+    let element = div();
+    let _ = ui! {
+        <deferred>
+            {element}
+        </deferred>
     };
 }

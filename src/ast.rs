@@ -13,19 +13,27 @@ pub struct Markup {
 pub enum Element {
     /// Native elements: `<div>`, `<img>`, `<svg>`, `<canvas>`, `<anchored>`
     Native(NativeElement),
+    /// `<deferred>`
+    Deferred(DeferredElement),
     /// `<Foo/>` - component without parameters
     Component(ComponentElement),
     /// `<{expr}/>` or `<{expr}>...</{}>` - expression as tag
     Expression(ExprElement),
 }
 
-/// Native GPUI elements (div, img, svg, canvas, anchored)
 #[derive(Debug)]
 pub struct NativeElement {
     pub open_name: Ident,
     pub close_name: Option<Ident>,
     pub attributes: Vec<Attribute>,
     pub children: Vec<Child>,
+}
+
+#[derive(Debug)]
+pub struct DeferredElement {
+    pub open_name: Ident,
+    pub close_name: Option<Ident>,
+    pub child: Box<Child>,
 }
 
 /// A component element (`PascalCase` identifier).

@@ -4,7 +4,10 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::Ident;
 
-use crate::ast::{Attribute, Child, ComponentElement, Element, ExprElement, Markup, NativeElement};
+use crate::ast::{
+    Attribute, Child, ComponentElement, DeferredElement, Element, ExprElement, Markup,
+    NativeElement,
+};
 
 fn native_element_type(name: &str) -> &'static str {
     match name {
@@ -57,6 +60,7 @@ impl ToTokens for Element {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Native(el) => el.to_tokens(tokens),
+            Self::Deferred(el) => el.to_tokens(tokens),
             Self::Component(comp) => comp.to_tokens(tokens),
             Self::Expression(expr) => expr.to_tokens(tokens),
         }
@@ -80,6 +84,18 @@ impl ToTokens for NativeElement {
             output = append_children(output, &self.children);
         }
 
+        tokens.extend(output);
+    }
+}
+
+impl ToTokens for DeferredElement {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let child = &self.child;
+        let output = generate_base_with_spans(
+            &self.open_name,
+            self.close_name.as_ref(),
+            |name| quote! { #name((#child).into_any_element()) },
+        );
         tokens.extend(output);
     }
 }
@@ -304,6 +320,15 @@ mod tests {
             <anchored position={Point::default()}>
                 <div>{"Tooltip"}</div>
             </anchored>
+        }));
+    }
+
+    #[test]
+    fn test_deferred() {
+        assert_snapshot!(generate(quote::quote! {
+            <deferred>
+                <div>{"Deferred content"}</div>
+            </deferred>
         }));
     }
 }
