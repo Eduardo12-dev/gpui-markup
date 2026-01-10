@@ -6,7 +6,8 @@
 //! - `div { "Content" }` - no attributes
 //! - `div` - minimal
 //! - `deferred { child }` - deferred element
-//! - `(Button::new("Hi")) [style: Primary]` - expression element (wrapped in parens)
+//! - `(Button::new("Hi")) [style: Primary]` - expression element (wrapped in
+//!   parens)
 
 use proc_macro_error2::abort;
 use proc_macro2::TokenStream;
@@ -490,7 +491,10 @@ mod tests {
         };
         let markup: Markup = syn::parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
-            assert!(matches!(el.children[0], Child::Element(Element::Expression(_))));
+            assert!(matches!(
+                el.children[0],
+                Child::Element(Element::Expression(_))
+            ));
         } else {
             panic!("Expected Native element");
         }
@@ -541,7 +545,10 @@ mod tests {
         };
         let markup: Markup = syn::parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
-            assert!(matches!(el.children[0], Child::Element(Element::Component(_))));
+            assert!(matches!(
+                el.children[0],
+                Child::Element(Element::Component(_))
+            ));
         } else {
             panic!("Expected Native element");
         }

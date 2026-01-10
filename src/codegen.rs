@@ -52,8 +52,7 @@ impl ToTokens for NativeElement {
         output = append_attributes(output, &self.attributes);
 
         if !self.children.is_empty() {
-            let type_name =
-                quote::format_ident!("{}", native_element_type(&self.name.to_string()));
+            let type_name = quote::format_ident!("{}", native_element_type(&self.name.to_string()));
             output = wrap_with_parent_check(&output, &quote! { gpui::#type_name });
             output = append_children(output, &self.children);
         }

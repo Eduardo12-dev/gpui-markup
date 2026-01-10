@@ -14,7 +14,8 @@ pub struct Markup {
 pub enum Element {
     /// Native elements: `div`, `svg`, `anchored`
     Native(NativeElement),
-    /// Component elements: `Header`, `Button`, etc. (calls `::new()` implicitly)
+    /// Component elements: `Header`, `Button`, etc. (calls `::new()`
+    /// implicitly)
     Component(ComponentElement),
     /// `deferred { child }`
     Deferred(DeferredElement),
