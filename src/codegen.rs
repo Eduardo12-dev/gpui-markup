@@ -91,11 +91,11 @@ impl ToTokens for NativeElement {
 impl ToTokens for DeferredElement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let child = &self.child;
-        let output = generate_base_with_spans(
-            &self.open_name,
-            self.close_name.as_ref(),
-            |name| quote! { #name((#child).into_any_element()) },
-        );
+        let name = &self.open_name;
+        // Don't use `generate_base_with_spans` here because `deferred()` has an `impl Trait`
+        // parameter. Using it as a path statement (e.g., `deferred;`) causes Rust to attempt
+        // type inference, which fails with "type annotations needed" error.
+        let output = quote! { #name((#child).into_any_element()) };
         tokens.extend(output);
     }
 }

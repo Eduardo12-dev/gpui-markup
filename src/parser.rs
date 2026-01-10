@@ -127,7 +127,6 @@ fn parse_deferred_element(input: ParseStream, open_name: Ident) -> Result<Elemen
 
     Ok(Element::Deferred(DeferredElement {
         open_name,
-        close_name: Some(closing_ident),
         child: Box::new(child),
     }))
 }

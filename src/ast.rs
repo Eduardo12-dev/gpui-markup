@@ -32,7 +32,6 @@ pub struct NativeElement {
 #[derive(Debug)]
 pub struct DeferredElement {
     pub open_name: Ident,
-    pub close_name: Option<Ident>,
     pub child: Box<Child>,
 }
 
