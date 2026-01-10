@@ -6,7 +6,7 @@ A declarative markup DSL for building [GPUI](https://gpui.rs) applications.
 
 ```toml
 [dependencies]
-gpui-markup = "0.1"
+gpui-markup = "0.3"
 ```
 
 ## Usage
