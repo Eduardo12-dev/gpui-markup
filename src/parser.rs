@@ -297,13 +297,18 @@ fn parse_child(input: ParseStream) -> Result<Child> {
     Ok(Child::Expression(expr))
 }
 
-/// Parse a method chain, handling nested generics.
+/// Parse a method chain until comma.
+///
+/// We need to track angle bracket depth because `<>` are not paired delimiters
+/// in Rust's tokenizer (unlike `()`, `[]`, `{}`). They are parsed as individual
+/// `Punct` tokens, so commas inside generics like `.map::<Div, _>()` would
+/// incorrectly terminate the method chain without this tracking.
 fn parse_method_chain(input: ParseStream) -> Result<TokenStream> {
     let mut tokens = TokenStream::new();
     let mut angle_depth = 0i32;
 
     while !input.is_empty() {
-        // Stop on comma at depth 0
+        // Only stop on comma when not inside angle brackets (generics)
         if input.peek(Token![,]) && angle_depth == 0 {
             break;
         }
