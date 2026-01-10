@@ -1,15 +1,12 @@
 ---
 source: src/codegen.rs
-expression: "generate(quote::quote! { <div> {.flex().flex_col().gap_2()} </div> })"
+expression: "generate(quote::quote! { div { .flex().flex_col().gap_2(), } })"
 ---
 fn __wrapper() {
     {
         fn __assert_parent_element<T: gpui::ParentElement>() {}
         __assert_parent_element::<gpui::Div>();
-        {
-            #[allow(path_statements)] div;
-            div()
-        }
+        div()
     }
         .flex()
         .flex_col()

@@ -1,14 +1,14 @@
 //! gpui-markup - A declarative markup DSL for building GPUI applications.
 //!
-//! This crate provides a JSX-like syntax for building GPUI UIs:
+//! This crate provides a Rust-native syntax for building GPUI UIs:
 //!
 //! ```ignore
 //! ui! {
-//!     <div flex flex_col w={px(200.0)} bg={theme.secondary}>
-//!         <div text_size={px(16.0)}>
-//!             {"Hello World"}
-//!         </div>
-//!     </div>
+//!     div [flex, flex_col, w: px(200.0), bg: theme.secondary] {
+//!         div [text_size: px(16.0)] {
+//!             "Hello World",
+//!         },
+//!     }
 //! }
 //! ```
 //!
@@ -45,62 +45,62 @@ use crate::ast::Markup;
 /// ## Basic Elements
 ///
 /// ```ignore
-/// ui! { <div/> }                    // -> div()
-/// ui! { <div flex/> }               // -> div().flex()
-/// ui! { <div w={px(200.0)}/> }      // -> div().w(px(200.0))
+/// ui! { div }                         // -> div()
+/// ui! { div [flex] }                  // -> div().flex()
+/// ui! { div [w: px(200.0)] }          // -> div().w(px(200.0))
 /// ```
 ///
 /// ## Children
 ///
 /// ```ignore
-/// // Children use chained .child() calls
+/// // Comma-separated children
 /// ui! {
-///     <div>
-///         {"First"}
-///         {"Second"}
-///     </div>
+///     div {
+///         "First",
+///         "Second",
+///     }
 /// }
 /// // -> div().child("First").child("Second")
 /// ```
 ///
 /// ## Spread Children
 ///
-/// Use `{..expr}` to spread an iterable as children:
+/// Use `..expr` to spread an iterable as children:
 ///
 /// ```ignore
 /// let items: Vec<Div> = vec![div(), div()];
 ///
 /// ui! {
-///     <div>
-///         {..items}
-///     </div>
+///     div {
+///         ..items,
+///     }
 /// }
 /// // -> div().children(items)
 ///
 /// // Can be mixed with regular children
 /// ui! {
-///     <div>
-///         {"Header"}
-///         {..items}
-///         {"Footer"}
-///     </div>
+///     div {
+///         "Header",
+///         ..items,
+///         "Footer",
+///     }
 /// }
 /// // -> div().child("Header").children(items).child("Footer")
 /// ```
 ///
 /// ## Method Chains
 ///
-/// Use `{.method(args)}` to insert method calls at any position.
+/// Use `.method(args)` to insert method calls at any position.
 /// Supports method chains and generics:
 ///
 /// ```ignore
 /// ui! {
-///     <div>
-///         {"static child"}
-///         {.when(condition, |d| d.child("dynamic"))}
-///         {.flex().gap_2()}
-///         {.map::<Div, _>(|d| d)}
-///     </div>
+///     div {
+///         "static child",
+///         .when(condition, |d| d.child("dynamic")),
+///         .flex().gap_2(),
+///         .map::<Div, _>(|d| d),
+///     }
 /// }
 /// ```
 ///
@@ -108,25 +108,27 @@ use crate::ast::Markup;
 ///
 /// Use standard Rust comments (`//` or `/* */`) inside `ui!`.
 ///
-/// ## Components
+/// ## Expression Elements
+///
+/// Any expression can be used as an element:
 ///
 /// ```ignore
-/// ui! { <Header/> }                 // -> Header::new()
-/// ui! { <{NavItem::new(path)}/> }   // -> NavItem::new(path)
+/// ui! { Header::new() }                          // -> Header::new()
+/// ui! { Button::new("Click") [style: Primary] }  // -> Button::new("Click").style(Primary)
+/// ui! {
+///     Container::new() [flex] {
+///         "Content",
+///     }
+/// }
 /// ```
 ///
-/// ## Expression Tags
+/// ## Multi-value Attributes
+///
+/// Use tuples for attributes with multiple arguments:
 ///
 /// ```ignore
-/// // Self-closing expression tag
-/// ui! { <{Container::new(title)}/> }
-///
-/// // Expression tag with attributes and children
-/// ui! {
-///     <{Container::new(title)} flex>
-///         {"Content"}
-///     </{}>
-/// }
+/// ui! { div [when: (condition, |d| d.flex())] }
+/// // -> div().when(condition, |d| d.flex())
 /// ```
 #[proc_macro]
 #[proc_macro_error]

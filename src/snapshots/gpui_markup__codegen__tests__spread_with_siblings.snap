@@ -1,15 +1,12 @@
 ---
 source: src/codegen.rs
-expression: "generate(quote::quote! { <div> {\"Header\"} {..items} {\"Footer\"} </div> })"
+expression: "generate(quote::quote! { div { \"Header\", ..items, \"Footer\", } })"
 ---
 fn __wrapper() {
     {
         fn __assert_parent_element<T: gpui::ParentElement>() {}
         __assert_parent_element::<gpui::Div>();
-        {
-            #[allow(path_statements)] div;
-            div()
-        }
+        div()
     }
         .child("Header")
         .children(items)

@@ -1,0 +1,7 @@
+---
+source: src/codegen.rs
+expression: "generate(quote::quote! { Header [flex, style: Primary] })"
+---
+fn __wrapper() {
+    Header::new().flex().style(Primary)
+}

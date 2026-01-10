@@ -1,5 +1,5 @@
 error: unexpected end of input, expected an expression
- --> tests/fail/empty_expression_tag.rs:5:21
+ --> tests/fail/empty_expression_tag.rs:5:20
   |
-5 |     let _ = ui! { <{}/> };
-  |                     ^
+5 |     let _ = ui! { () };
+  |                    ^

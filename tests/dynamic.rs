@@ -8,9 +8,9 @@ use gpui_markup::ui;
 fn test_dynamic_text() {
     let name = "Alice";
     let _ = ui! {
-        <div>
-            {format!("Hello, {}!", name)}
-        </div>
+        div {
+            format!("Hello, {}!", name),
+        }
     };
 }
 
@@ -19,7 +19,7 @@ fn test_dynamic_attribute_value() {
     let width = 300.0;
     let height = 200.0;
     let _ = ui! {
-        <div w={px(width)} h={px(height)}/>
+        div [w: px(width), h: px(height)] {}
     };
 }
 
@@ -27,20 +27,20 @@ fn test_dynamic_attribute_value() {
 fn test_conditional_style_with_when() {
     let is_active = true;
     let _ = ui! {
-        <div
-            bg={gpui::black()}
-            when={is_active, |s| s.border_color(gpui::blue())}
-        />
+        div [
+            bg: gpui::black(),
+            when: (is_active, |s| s.border_color(gpui::blue())),
+        ] {}
     };
 }
 
 #[test]
 fn test_hover_with_closure() {
     let _ = ui! {
-        <div
-            bg={gpui::white()}
-            hover={|s: StyleRefinement| s.bg(gpui::black())}
-        />
+        div [
+            bg: gpui::white(),
+            hover: |s: StyleRefinement| s.bg(gpui::black()),
+        ] {}
     };
 }
 
@@ -49,7 +49,7 @@ fn test_complex_expression() {
     let values = [10.0, 20.0, 30.0];
     let index = 1;
     let _ = ui! {
-        <div w={px(values[index] * 2.0)}/>
+        div [w: px(values[index] * 2.0)] {}
     };
 }
 
@@ -57,9 +57,9 @@ fn test_complex_expression() {
 fn test_method_chain_in_child() {
     let text = "hello world";
     let _ = ui! {
-        <div>
-            {text.to_uppercase().replace(' ', "_")}
-        </div>
+        div {
+            text.to_uppercase().replace(' ', "_"),
+        }
     };
 }
 
@@ -67,9 +67,9 @@ fn test_method_chain_in_child() {
 fn test_conditional_child() {
     let show_extra = true;
     let _ = ui! {
-        <div>
-            {if show_extra { "Extra content" } else { "" }}
-        </div>
+        div {
+            if show_extra { "Extra content" } else { "" },
+        }
     };
 }
 
@@ -77,25 +77,25 @@ fn test_conditional_child() {
 fn test_match_expression_in_child() {
     let status = 1;
     let _ = ui! {
-        <div>
-            {match status {
+        div {
+            match status {
                 0 => "Pending",
                 1 => "Active",
                 _ => "Unknown",
-            }}
-        </div>
+            },
+        }
     };
 }
 
 #[test]
 fn test_block_expression_in_child() {
     let _ = ui! {
-        <div>
-            {{
+        div {
+            {
                 let x = 1 + 2;
                 format!("Result: {x}")
-            }}
-        </div>
+            },
+        }
     };
 }
 
@@ -103,9 +103,9 @@ fn test_block_expression_in_child() {
 fn test_closure_call_in_child() {
     let make_text = || "Generated text";
     let _ = ui! {
-        <div>
-            {make_text()}
-        </div>
+        div {
+            make_text(),
+        }
     };
 }
 
@@ -113,9 +113,9 @@ fn test_closure_call_in_child() {
 fn test_option_unwrap_in_child() {
     let maybe_name: Option<&str> = Some("Alice");
     let _ = ui! {
-        <div>
-            {maybe_name.map(|n| format!("Hello, {n}")).unwrap_or_default()}
-        </div>
+        div {
+            maybe_name.map(|n| format!("Hello, {n}")).unwrap_or_default(),
+        }
     };
 }
 
@@ -123,7 +123,7 @@ fn test_option_unwrap_in_child() {
 fn test_conditional_attribute_value() {
     let level = 2;
     let _ = ui! {
-        <div w={px(if level > 1 { 200.0 } else { 100.0 })}/>
+        div [w: px(if level > 1 { 200.0 } else { 100.0 })] {}
     };
 }
 
@@ -138,7 +138,7 @@ fn test_struct_field_in_attribute() {
         height: 200.0,
     };
     let _ = ui! {
-        <div w={px(config.width)} h={px(config.height)}/>
+        div [w: px(config.width), h: px(config.height)] {}
     };
 }
 
@@ -146,10 +146,10 @@ fn test_struct_field_in_attribute() {
 fn test_multiple_children_mixed_types() {
     let data = ("Title", "Description");
     let _ = ui! {
-        <div>
-            {data.0}
-            {data.1}
-        </div>
+        div {
+            data.0,
+            data.1,
+        }
     };
 }
 
@@ -157,28 +157,28 @@ fn test_multiple_children_mixed_types() {
 fn test_array_index_in_child() {
     let items = ["First", "Second", "Third"];
     let _ = ui! {
-        <div>
-            {items[0]}
-            {items[1]}
-        </div>
+        div {
+            items[0],
+            items[1],
+        }
     };
 }
 
 #[test]
 fn test_deeply_nested_structure() {
     let _ = ui! {
-        <div flex>
-            <div flex_col>
-                <div>
-                    {"Level 1"}
-                    <div>
-                        {"Level 2"}
-                        <div>
-                            {"Level 3"}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        div [flex] {
+            div [flex_col] {
+                div {
+                    "Level 1",
+                    div {
+                        "Level 2",
+                        div {
+                            "Level 3",
+                        },
+                    },
+                },
+            },
+        }
     };
 }

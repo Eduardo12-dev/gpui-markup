@@ -1,5 +1,5 @@
-error: unexpected end of input, expected an expression
- --> tests/fail/invalid_spread.rs:7:16
+error: expected an expression
+ --> tests/fail/invalid_spread.rs:7:15
   |
-7 |             {..}
-  |                ^
+7 |             ..,
+  |               ^

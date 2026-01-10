@@ -12,39 +12,37 @@ pub struct Markup {
 /// An element in the markup tree.
 #[derive(Debug)]
 pub enum Element {
-    /// Native elements: `<div>`, `<svg>`, `<anchored>`
+    /// Native elements: `div`, `svg`, `anchored`
     Native(NativeElement),
-    /// `<deferred>`
-    Deferred(DeferredElement),
-    /// `<Foo/>` - component without parameters
+    /// Component elements: `Header`, `Button`, etc. (calls `::new()` implicitly)
     Component(ComponentElement),
-    /// `<{expr}/>` or `<{expr}>...</{}>` - expression as tag
+    /// `deferred { child }`
+    Deferred(DeferredElement),
+    /// Expression as element: `(expr) [attrs] { children }`
     Expression(ExprElement),
 }
 
 #[derive(Debug)]
 pub struct NativeElement {
-    pub open_name: Ident,
-    pub close_name: Option<Ident>,
+    pub name: Ident,
+    pub attributes: Vec<Attribute>,
+    pub children: Vec<Child>,
+}
+
+#[derive(Debug)]
+pub struct ComponentElement {
+    pub name: Ident,
     pub attributes: Vec<Attribute>,
     pub children: Vec<Child>,
 }
 
 #[derive(Debug)]
 pub struct DeferredElement {
-    pub open_name: Ident,
+    pub name: Ident,
     pub child: Box<Child>,
 }
 
-/// A component element (`PascalCase` identifier).
-#[derive(Debug)]
-pub struct ComponentElement {
-    pub open_name: Ident,
-    pub close_name: Option<Ident>,
-    pub children: Vec<Child>,
-}
-
-/// An expression used as a tag.
+/// An expression used as an element.
 #[derive(Debug)]
 pub struct ExprElement {
     pub expr: Expr,
@@ -57,8 +55,8 @@ pub struct ExprElement {
 pub enum Attribute {
     /// Flag attribute: `flex`, `cursor_pointer`, etc.
     Flag(Ident),
-    /// Key-value attribute: `w={px(200.0)}`, `when={cond, fn}`, etc.
-    KeyValue { key: Ident, values: Vec<Expr> },
+    /// Key-value attribute: `w: px(200.0)`, `when: (cond, fn)`, etc.
+    KeyValue { key: Ident, value: Expr },
 }
 
 /// A child of an element.
@@ -66,10 +64,10 @@ pub enum Attribute {
 pub enum Child {
     /// A nested element
     Element(Element),
-    /// An expression: `{expr}` or `{"text"}`
+    /// An expression: `expr` or `"text"`
     Expression(Expr),
-    /// A spread expression: `{..expr}` where expr is iterable
+    /// A spread expression: `..expr` where expr is iterable
     Spread(Expr),
-    /// A method chain: `{.method(args)}` or `{.a().b::<T>()}`
+    /// A method chain: `.method(args)` or `.a().b::<T>()`
     MethodChain(TokenStream),
 }

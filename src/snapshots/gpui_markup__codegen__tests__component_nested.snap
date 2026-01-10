@@ -1,6 +1,6 @@
 ---
 source: src/codegen.rs
-expression: "generate(quote::quote! { div { ..items, } })"
+expression: "generate(quote::quote! { div { Header [flex], Footer {}, } })"
 ---
 fn __wrapper() {
     {
@@ -8,5 +8,6 @@ fn __wrapper() {
         __assert_parent_element::<gpui::Div>();
         div()
     }
-        .children(items)
+        .child(Header::new().flex())
+        .child(Footer::new())
 }
