@@ -88,18 +88,20 @@ use crate::ast::Markup;
 /// // -> div().child("Header").children(items).child("Footer")
 /// ```
 ///
-/// ## Method Calls
+/// ## Method Chains
 ///
-/// Use `{.method(args)}` to insert method calls at any position:
+/// Use `{.method(args)}` to insert method calls at any position.
+/// Supports method chains and generics:
 ///
 /// ```ignore
 /// ui! {
 ///     <div>
 ///         {"static child"}
-///         {.when(condition, |d| d.child("dynamic child"))}
+///         {.when(condition, |d| d.child("dynamic"))}
+///         {.flex().gap_2()}
+///         {.map::<Div, _>(|d| d)}
 ///     </div>
 /// }
-/// // -> div().child("static child").when(condition, |d| d.child("dynamic child"))
 /// ```
 ///
 /// ## Components

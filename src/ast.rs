@@ -1,5 +1,6 @@
 //! AST definitions for gpui-markup DSL.
 
+use proc_macro2::TokenStream;
 use syn::{Expr, Ident};
 
 /// Root node of the markup DSL.
@@ -69,6 +70,6 @@ pub enum Child {
     Expression(Expr),
     /// A spread expression: `{..expr}` where expr is iterable
     Spread(Expr),
-    /// A method call: `{.method(args)}`
-    MethodCall { name: Ident, args: Vec<Expr> },
+    /// A method chain: `{.method(args)}` or `{.a().b::<T>()}`
+    MethodChain(TokenStream),
 }

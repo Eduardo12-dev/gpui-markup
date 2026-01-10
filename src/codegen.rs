@@ -96,8 +96,8 @@ impl ToTokens for DeferredElement {
         let child_tokens = match self.child.as_ref() {
             Child::Element(element) => quote! { #element },
             Child::Expression(expr) => quote! { #expr },
-            // Spread and MethodCall don't make sense for deferred
-            Child::Spread(_) | Child::MethodCall { .. } => {
+            // Spread and MethodChain don't make sense for deferred
+            Child::Spread(_) | Child::MethodChain(_) => {
                 unreachable!("deferred only accepts Element or Expression")
             }
         };
@@ -154,7 +154,7 @@ fn append_children(mut output: TokenStream, children: &[Child]) -> TokenStream {
             Child::Element(element) => quote! { #output.child(#element) },
             Child::Expression(expr) => quote! { #output.child(#expr) },
             Child::Spread(expr) => quote! { #output.children(#expr) },
-            Child::MethodCall { name, args } => quote! { #output.#name(#(#args),*) },
+            Child::MethodChain(tokens) => quote! { #output.#tokens },
         };
     }
     output
@@ -347,6 +347,24 @@ mod tests {
         assert_snapshot!(generate(quote::quote! {
             <div>
                 {.flex()}
+            </div>
+        }));
+    }
+
+    #[test]
+    fn test_method_chain() {
+        assert_snapshot!(generate(quote::quote! {
+            <div>
+                {.flex().flex_col().gap_2()}
+            </div>
+        }));
+    }
+
+    #[test]
+    fn test_method_with_generics() {
+        assert_snapshot!(generate(quote::quote! {
+            <div>
+                {.map::<Div, _>(|d| d)}
             </div>
         }));
     }

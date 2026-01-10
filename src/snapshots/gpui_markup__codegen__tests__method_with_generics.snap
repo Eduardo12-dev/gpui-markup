@@ -1,0 +1,15 @@
+---
+source: src/codegen.rs
+expression: "generate(quote::quote! { <div> {.map::<Div, _>(|d| d)} </div> })"
+---
+fn __wrapper() {
+    {
+        fn __assert_parent_element<T: gpui::ParentElement>() {}
+        __assert_parent_element::<gpui::Div>();
+        {
+            #[allow(path_statements)] div;
+            div()
+        }
+    }
+        .map::<Div, _>(|d| d)
+}
