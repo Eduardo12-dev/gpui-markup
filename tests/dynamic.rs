@@ -182,3 +182,50 @@ fn test_deeply_nested_structure() {
         }
     };
 }
+
+#[test]
+fn test_nested_ui_macro() {
+    let _ = ui! {
+        div {
+            ui! { div { "Nested macro" } },
+        }
+    };
+}
+
+#[test]
+fn test_nested_ui_macro_with_variable() {
+    let inner = ui! { div [flex] { "Inner" } };
+    let _ = ui! {
+        div {
+            inner,
+        }
+    };
+}
+
+#[test]
+fn test_nested_ui_macro_in_spread() {
+    let items = vec![
+        ui! { div { "A" } },
+        ui! { div { "B" } },
+    ];
+    let _ = ui! {
+        div {
+            ..items,
+        }
+    };
+}
+
+#[test]
+fn test_deeply_nested_ui_macros() {
+    let _ = ui! {
+        div {
+            ui! {
+                div {
+                    ui! {
+                        div { "Deep" }
+                    },
+                }
+            },
+        }
+    };
+}
