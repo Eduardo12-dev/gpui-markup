@@ -17,7 +17,7 @@ quote = "1"
 syn = { version = "2", features = ["full", "parsing", "extra-traits"] }
 
 [dev-dependencies]
-gpui = "0.2.2"
+gpui = { git = "https://github.com/zed-industries/zed" }
 insta = "1"
 prettyplease = "0.2"
 trybuild = "1"
