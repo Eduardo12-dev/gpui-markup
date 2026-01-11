@@ -85,7 +85,11 @@ fn parse_expression_element(input: ParseStream, require_braces: bool) -> Result<
     let attributes = parse_optional_attributes(input)?;
 
     if require_braces && !input.peek(Brace) {
-        abort!(expr.span(), "expression element requires braces: `expr {}`");
+        abort!(
+            expr.span(),
+            "top-level element requires braces, e.g. `expr @[attrs] { children }`\n\
+             note: braces declare this as a UI element in the component tree, not just an expression"
+        );
     }
 
     let children = parse_optional_children(input)?;

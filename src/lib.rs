@@ -110,7 +110,7 @@ use crate::ast::Markup;
 ///
 /// ## Expression Elements
 ///
-/// Any expression can be used as an element (braces required):
+/// Any expression can be used as an element (braces required at top level):
 ///
 /// ```ignore
 /// ui! { Button::new("Click") {} }              // -> Button::new("Click")
@@ -126,6 +126,11 @@ use crate::ast::Markup;
 /// // Parentheses for complex expressions (braces optional)
 /// ui! { (a + b) }                              // -> a + b
 /// ```
+///
+/// **Why braces at top level?** The `ui!` macro builds a component tree.
+/// Braces declare "this is a UI element" - they mark it as a tree node,
+/// trigger implicit `::new()` for components, and provide a place for
+/// attributes and children.
 ///
 /// ## Multi-value Attributes
 ///
