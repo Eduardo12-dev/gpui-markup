@@ -65,7 +65,7 @@ fn parse_element(input: ParseStream) -> Result<Element> {
         return parse_expression_element(input, true);
     }
 
-    // Parenthesized expression: braces optional for backwards compatibility
+    // Parenthesized expression
     if input.peek(Paren) {
         return parse_expression_element(input, false);
     }
