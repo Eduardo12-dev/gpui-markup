@@ -226,3 +226,86 @@ fn test_deeply_nested_ui_macros() {
         }
     };
 }
+
+#[test]
+fn test_closure_param_as_expression_element() {
+    // Lowercase identifiers that are not native elements (div/svg/anchored)
+    // should be treated as expression elements, not components
+    let _ = ui! {
+        div {
+            .when(true, |s| {
+                ui! {
+                    s {}
+                }
+            })
+        }
+    };
+}
+
+#[test]
+fn test_closure_param_with_attributes() {
+    // Closure parameters can have attributes applied
+    let _ = ui! {
+        div {
+            .when(true, |element| {
+                ui! {
+                    element @[flex, gap_2] {}
+                }
+            })
+        }
+    };
+}
+
+#[test]
+fn test_closure_param_with_children() {
+    // Closure parameters can have children
+    let _ = ui! {
+        div {
+            .when(true, |container| {
+                ui! {
+                    container {
+                        "Child content",
+                    }
+                }
+            })
+        }
+    };
+}
+
+#[test]
+fn test_closure_param_with_attrs_and_children() {
+    // Full example: closure parameter with both attributes and children
+    let _ = ui! {
+        div {
+            .when(true, |base| {
+                ui! {
+                    base @[flex, flex_col, gap_4] {
+                        "Header",
+                        div @[flex] { "Body" },
+                        "Footer",
+                    }
+                }
+            })
+        }
+    };
+}
+
+#[test]
+fn test_nested_closures_with_params() {
+    // Nested closures with parameters used as elements
+    let _ = ui! {
+        div {
+            .when(true, |outer| {
+                ui! {
+                    outer {
+                        .when(true, |inner| {
+                            ui! {
+                                inner { "Deeply nested" }
+                            }
+                        }),
+                    }
+                }
+            })
+        }
+    };
+}

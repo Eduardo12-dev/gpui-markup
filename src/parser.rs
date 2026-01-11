@@ -43,10 +43,24 @@ fn parse_element(input: ParseStream) -> Result<Element> {
         // This allows `div().flex() {}` to be an expression element
         if fork.peek(Brace) || fork.peek(Token![@]) {
             let ident = input.call(Ident::parse_any)?;
-            match ident.to_string().as_str() {
-                "deferred" => return parse_deferred_element(input, ident),
-                n if NATIVE_ELEMENTS.contains(&n) => return parse_native_element(input, ident),
-                _ => return parse_component_element(input, ident),
+            let ident_str = ident.to_string();
+
+            return match ident_str.as_str() {
+                "deferred" => parse_deferred_element(input, ident),
+                n if NATIVE_ELEMENTS.contains(&n) => parse_native_element(input, ident),
+                // Only treat as component if it starts with uppercase
+                _ if ident_str.chars().next().is_some_and(char::is_uppercase) => {
+                    parse_component_element(input, ident)
+                }
+                // Otherwise, treat as expression element (e.g., closure parameter)
+                _ => {
+                    let expr = syn::Expr::Path(syn::ExprPath {
+                        attrs: vec![],
+                        qself: None,
+                        path: ident.into(),
+                    });
+                    return parse_expression_element_with_expr(input, expr, false);
+                }
             };
         }
 

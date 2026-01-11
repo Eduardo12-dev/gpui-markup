@@ -168,7 +168,7 @@ ui! {
 
 ### Components
 
-Components are any non-native element names. They automatically call `::new()`:
+Components are any uppercase non-native element names. They automatically call `::new()`:
 
 ```rust
 // Simple component
@@ -232,6 +232,48 @@ div {
     Header::new(),  // braces optional here, but no implicit ::new()
 }
 ```
+
+### Closure Parameters as Elements
+
+When using closure parameters (e.g., from `.when()`, `.map()`) in nested `ui!` macros, lowercase identifiers are treated as expression elements, not components:
+
+```rust
+// Closure parameter as element
+ui! {
+    div {
+        .when(selected, |s| {
+            ui! {
+                s {}  // `s` is treated as an expression element, not a component
+            }
+        })
+    }
+}
+// -> div().when(selected, |s| { s })
+
+// With attributes and children
+ui! {
+    div {
+        .when(condition, |styled| {
+            ui! {
+                styled @[flex, gap_2] {
+                    "Content",
+                }
+            }
+        })
+    }
+}
+// -> div().when(condition, |styled| {
+//      gpui::ParentElement::child(styled.flex().gap_2(), "Content")
+//    })
+```
+
+**How it works:**
+
+- **Uppercase identifiers** (e.g., `Header`, `Button`) → Components, call `::new()` implicitly
+- **Lowercase native elements** (`div`, `svg`, `anchored`) → Native GPUI elements
+- **Other lowercase identifiers** (e.g., `s`, `element`, `styled`) → Expression elements (variables, parameters)
+
+This allows seamless use of closure parameters from GPUI's builder methods like `.when()`, `.map()`, `.hover()`, etc.
 
 ### Nested Structures
 
