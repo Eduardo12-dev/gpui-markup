@@ -4,9 +4,8 @@ A declarative markup DSL for building [GPUI](https://gpui.rs) applications.
 
 ## Installation
 
-```toml
-[dependencies]
-gpui-markup = "0.4"
+```bash
+cargo add gpui-markup
 ```
 
 ## Usage
