@@ -17,14 +17,11 @@ use gpui_markup::ui;
 
 fn my_view(cx: &mut ViewContext<Self>) -> impl IntoElement {
     ui! {
-        div {
-            [flex, flex_col, gap: 2, p: 4, bg: cx.theme().colors().background]
-            div {
-                [text_size: px(24.0), font_weight: FontWeight::BOLD]
+        div @[flex, flex_col, gap: 2, p: 4, bg: cx.theme().colors().background] {
+            div @[text_size: px(24.0), font_weight: FontWeight::BOLD] {
                 "Hello, GPUI!",
             },
-            div {
-                [text_color: cx.theme().colors().text_muted]
+            div @[text_color: cx.theme().colors().text_muted] {
                 "A declarative way to build UIs",
             },
         }
@@ -36,7 +33,7 @@ fn my_view(cx: &mut ViewContext<Self>) -> impl IntoElement {
 
 ### Elements
 
-All elements require braces `{}`. Attributes go inside braces with `[...]`:
+All elements require braces `{}`. Attributes go before braces with `@[...]`:
 
 ```rust
 // Empty div
@@ -44,46 +41,46 @@ ui! { div {} }
 // -> div()
 
 // Div with attributes
-ui! { div { [flex, flex_col] } }
+ui! { div @[flex, flex_col] {} }
 // -> div().flex().flex_col()
 
 // Div with children
 ui! { div { "content" } }
 // -> div().child("content")
 
-// Full form: attributes followed by children
-ui! { div { [flex] "content" } }
+// Full form: attributes before braces, children inside
+ui! { div @[flex] { "content" } }
 // -> div().flex().child("content")
 ```
 
 ### Attributes
 
-Attributes go inside `{ [...] }`, comma-separated:
+Attributes use `@[...]` before braces, comma-separated:
 
 ```rust
 // Flag attributes (no value)
-ui! { div { [flex, flex_col] } }
+ui! { div @[flex, flex_col] {} }
 // -> div().flex().flex_col()
 
 // Key-value attributes
-ui! { div { [w: px(200.0), h: px(100.0)] } }
+ui! { div @[w: px(200.0), h: px(100.0)] {} }
 // -> div().w(px(200.0)).h(px(100.0))
 
 // Multi-value attributes (use tuples)
-ui! { div { [when: (condition, |d| d.bg(red()))] } }
+ui! { div @[when: (condition, |d| d.bg(red()))] {} }
 // -> div().when(condition, |d| d.bg(red()))
 ```
 
 ### Children
 
-Children go inside `{...}`, comma-separated (after optional attributes):
+Children go inside `{...}`, comma-separated:
 
 ```rust
 ui! {
     div {
         "First",
         "Second",
-        div { [bold] "Nested" },
+        div @[bold] { "Nested" },
     }
 }
 // -> div().child("First").child("Second").child(div().bold().child("Nested"))
@@ -168,7 +165,7 @@ ui! { Header {} }
 // -> Header::new()
 
 // Component with attributes
-ui! { Button { [style: Primary] } }
+ui! { Button @[style: Primary] {} }
 // -> Button::new().style(Primary)
 
 // Component with children
@@ -183,7 +180,7 @@ ui! {
 
 ### Expression Elements
 
-Any expression can be used as an element. Braces are required:
+Any expression can be used as an element at the top level (braces required):
 
 ```rust
 // Custom constructor
@@ -191,13 +188,12 @@ ui! { Button::with_label("Click") {} }
 // -> Button::with_label("Click")
 
 // Expression with attributes
-ui! { Button::with_label("Click") { [style: Primary] } }
+ui! { Button::with_label("Click") @[style: Primary] {} }
 // -> Button::with_label("Click").style(Primary)
 
 // Builder pattern expression
 ui! {
-    div().flex() {
-        [flex_col]
+    div().flex() @[flex_col] {
         "Content",
     }
 }
@@ -208,19 +204,34 @@ ui! { (a + b) }
 // -> a + b
 ```
 
+**Why braces are required at top level?**
+
+The `ui!` macro builds a GPUI component tree. At the top level, `{}` declares "this is a UI element":
+
+- Marks this as a node in the component tree, not just an expression
+- For components, `{}` triggers the implicit `::new()` call
+- Provides a place for attributes `@[...]` and children
+
+```rust
+// Clear: defining a UI element, Header::new() is called
+ui! { Header {} }
+
+// As a child, context already indicates it's part of the tree
+div {
+    Header::new(),  // braces optional here, but no implicit ::new()
+}
+```
+
 ### Nested Structures
 
 ```rust
 ui! {
-    div {
-        [flex, flex_col, gap: 4]
-        div {
-            [flex, justify_between]
+    div @[flex, flex_col, gap: 4] {
+        div @[flex, justify_between] {
             Label {},
-            Button { [on_click: handle_click] },
+            Button @[on_click: handle_click] {},
         },
-        div {
-            [flex: 1, overflow: hidden]
+        div @[flex: 1, overflow: hidden] {
             ScrollView { content },
         },
     }
@@ -234,17 +245,17 @@ The `ui!` macro transforms the markup syntax into GPUI's builder pattern at comp
 | Markup | Generated Code |
 |--------|----------------|
 | `div {}` | `div()` |
-| `div { [flex] }` | `div().flex()` |
-| `div { [w: x] }` | `div().w(x)` |
-| `div { [when: (a, b)] }` | `div().when(a, b)` |
+| `div @[flex] {}` | `div().flex()` |
+| `div @[w: x] {}` | `div().w(x)` |
+| `div @[when: (a, b)] {}` | `div().when(a, b)` |
 | `div { a, b }` | `div().child(a).child(b)` |
 | `div { ..items }` | `div().children(items)` |
 | `div { .a().b() }` | `div().a().b()` |
 | `deferred { e }` | `deferred(e.into_any_element())` |
 | `Header {}` | `Header::new()` |
-| `Header { [a] }` | `Header::new().a()` |
+| `Header @[a] {}` | `Header::new().a()` |
 | `expr {}` | `expr` |
-| `expr { [a] }` | `expr.a()` |
+| `expr @[a] {}` | `expr.a()` |
 | `(expr)` | `expr` |
 
 ## License
