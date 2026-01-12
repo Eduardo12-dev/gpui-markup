@@ -10,7 +10,7 @@
 //! - `(complex + expr) @[style: Primary] {}` - parenthesized expression element
 
 use proc_macro_error2::abort;
-use proc_macro2::{TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream, TokenTree};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -23,136 +23,175 @@ use crate::ast::{
     NativeElement,
 };
 
-/// Native GPUI element names
 const NATIVE_ELEMENTS: &[&str] = &["div", "svg", "anchored"];
+
+/// Element head (the identifier or expression part before attributes/children)
+enum ElementHead {
+    /// Native element: div, svg, anchored
+    Native(Ident),
+    /// `deferred` element
+    Deferred(Ident),
+    /// Component (uppercase): Header, Footer
+    Component(Ident),
+    /// Expression element: s, `foo()`, `Button::new()`, (expr)
+    Expression(Expr),
+}
+
+impl ElementHead {
+    fn span(&self) -> proc_macro2::Span {
+        match self {
+            Self::Native(ident) | Self::Deferred(ident) | Self::Component(ident) => ident.span(),
+            Self::Expression(expr) => expr.span(),
+        }
+    }
+}
 
 impl Parse for Markup {
     fn parse(input: ParseStream) -> Result<Self> {
-        let element = parse_element(input)?;
+        let element = parse_root_element(input)?;
+
         Ok(Self { element })
     }
 }
 
-/// Parse an element at the top level or as a child.
-fn parse_element(input: ParseStream) -> Result<Element> {
+/// Check if the input can continue as an expression (e.g. `div()`,
+/// `Header::new()`)
+fn can_continue_as_expr(input: ParseStream) -> bool {
+    !input.is_empty() && input.parse::<Expr>().is_ok()
+}
+
+/// Parse the element head (identifier or expression before attributes/children)
+fn parse_element_head(input: ParseStream) -> Result<ElementHead> {
+    // arse parenthesized expression as Expression
+    if input.peek(Paren) {
+        let expr: Expr = input.parse()?;
+        return Ok(ElementHead::Expression(expr));
+    }
+
     if input.peek(Ident::peek_any) {
         let fork = input.fork();
-        fork.call(Ident::parse_any)?;
+        let ident = fork.call(Ident::parse_any)?;
+        let name = ident.to_string();
 
-        // Treat as special element if directly followed by @[...] or {}
-        // This allows `div().flex() {}` to be an expression element
-        if fork.peek(Brace) || fork.peek(Token![@]) {
-            let ident = input.call(Ident::parse_any)?;
-            let ident_str = ident.to_string();
+        // Check if followed by element suffix (@ or {)
+        let has_element_suffix = fork.peek(Token![@]) || fork.peek(Brace);
 
-            return match ident_str.as_str() {
-                "deferred" => parse_deferred_element(input, ident),
-                n if NATIVE_ELEMENTS.contains(&n) => parse_native_element(input, ident),
-                // Only treat as component if it starts with uppercase
-                _ if ident_str.chars().next().is_some_and(char::is_uppercase) => {
-                    parse_component_element(input, ident)
-                }
-                // Otherwise, treat as expression element (e.g., closure parameter)
-                _ => {
-                    let expr = syn::Expr::Path(syn::ExprPath {
-                        attrs: vec![],
-                        qself: None,
-                        path: ident.into(),
-                    });
-                    return parse_expression_element_with_expr(input, expr, false);
-                }
-            };
+        // If not followed by element suffix, check if we need to parse as
+        // expression
+        if !has_element_suffix {
+            // For known elements (native/deferred/component), check if it's actually an
+            // expression
+            let is_known = NATIVE_ELEMENTS.contains(&name.as_str())
+                || name == "deferred"
+                || name.starts_with(char::is_uppercase);
+
+            if !is_known || can_continue_as_expr(&fork) {
+                // For unknown lowercase idents or known elements with expression continuation,
+                // parse as full expression. This handles cases like `text.method()`, `foo()`,
+                // `div()`, etc.
+                let expr: Expr = input.parse()?;
+                return Ok(ElementHead::Expression(expr));
+            }
         }
 
-        return parse_expression_element(input, true);
+        // known element
+        let ident = input.call(Ident::parse_any)?;
+
+        if NATIVE_ELEMENTS.contains(&name.as_str()) {
+            return Ok(ElementHead::Native(ident));
+        }
+        if name == "deferred" {
+            return Ok(ElementHead::Deferred(ident));
+        }
+        if name.starts_with(char::is_uppercase) {
+            return Ok(ElementHead::Component(ident));
+        }
+
+        // Other lowercase identifiers
+        let expr = Expr::Path(syn::ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: ident.into(),
+        });
+
+        return Ok(ElementHead::Expression(expr));
     }
 
-    if input.peek(Paren) {
-        return parse_expression_element(input, false);
-    }
-
-    abort!(
-        input.span(),
-        "Expected element: native element (div, svg, etc.), component, or expression"
-    );
-}
-
-/// Parse an expression element: `expr @[attrs] { children }` or `(expr)
-/// @[attrs] { children }`
-fn parse_expression_element(input: ParseStream, require_braces: bool) -> Result<Element> {
     let expr: Expr = input.parse()?;
-    parse_expression_element_with_expr(input, expr, require_braces)
+
+    Ok(ElementHead::Expression(expr))
 }
 
-fn parse_expression_element_with_expr(
-    input: ParseStream,
-    expr: Expr,
-    require_braces: bool,
-) -> Result<Element> {
-    let attributes = parse_optional_attributes(input)?;
+/// Build an Element from the parsed head, attributes, and children
+fn build_element(head: ElementHead, attributes: Vec<Attribute>, children: Vec<Child>) -> Element {
+    match head {
+        ElementHead::Native(name) => Element::Native(NativeElement {
+            name,
+            attributes,
+            children,
+        }),
+        ElementHead::Deferred(name) => {
+            if children.len() != 1 {
+                abort!(name.span(), "deferred must have exactly one child");
+            }
+            Element::Deferred(DeferredElement {
+                name,
+                child: Box::new(children.into_iter().next().unwrap()),
+            })
+        }
+        ElementHead::Component(name) => Element::Component(ComponentElement {
+            name,
+            attributes,
+            children,
+        }),
+        ElementHead::Expression(expr) => Element::Expression(ExprElement {
+            expr,
+            attributes,
+            children,
+        }),
+    }
+}
 
-    if require_braces && !input.peek(Brace) {
+/// Parse element children `{...}` with optional requirement
+fn parse_element_children(
+    input: ParseStream,
+    require_braces: bool,
+    head_span: Span,
+) -> Result<Vec<Child>> {
+    if !input.peek(Brace) {
+        if require_braces {
+            abort!(head_span, "element requires braces: `{}`");
+        }
+        return Ok(vec![]); // No children
+    }
+
+    let content;
+    braced!(content in input);
+    parse_children(&content)
+}
+
+/// Parse an element at the top level
+fn parse_root_element(input: ParseStream) -> Result<Element> {
+    let head = parse_element_head(input)?;
+    let attributes = parse_attributes(input)?;
+    let head_span = head.span();
+
+    // Root element always requires braces
+    if !input.peek(Brace) {
         abort!(
-            expr.span(),
+            head_span,
             "top-level element requires braces, e.g. `expr @[attrs] { children }`\n\
              note: braces declare this as a UI element in the component tree, not just an expression"
         );
     }
 
-    let children = parse_optional_children(input)?;
-    Ok(Element::Expression(ExprElement {
-        expr,
-        attributes,
-        children,
-    }))
+    let children = parse_element_children(input, true, head_span)?;
+
+    Ok(build_element(head, attributes, children))
 }
 
-/// Parse a native element: `div @[attrs] { children }`
-fn parse_native_element(input: ParseStream, name: Ident) -> Result<Element> {
-    let (attributes, children) = parse_attrs_and_children(input, &name)?;
-    Ok(Element::Native(NativeElement {
-        name,
-        attributes,
-        children,
-    }))
-}
-
-/// Parse a component element: `Header @[attrs] { children }`
-/// Generates `Header::new()...`
-fn parse_component_element(input: ParseStream, name: Ident) -> Result<Element> {
-    let (attributes, children) = parse_attrs_and_children(input, &name)?;
-    Ok(Element::Component(ComponentElement {
-        name,
-        attributes,
-        children,
-    }))
-}
-
-fn parse_attrs_and_children(
-    input: ParseStream,
-    name: &Ident,
-) -> Result<(Vec<Attribute>, Vec<Child>)> {
-    let attributes = parse_optional_attributes(input)?;
-    let children = parse_required_children(input, name)?;
-
-    Ok((attributes, children))
-}
-
-/// Parse deferred element: `deferred { child }`
-fn parse_deferred_element(input: ParseStream, name: Ident) -> Result<Element> {
-    let mut children = parse_required_children(input, &name)?;
-    if children.len() != 1 {
-        abort!(name.span(), "deferred must have exactly one child");
-    }
-
-    Ok(Element::Deferred(DeferredElement {
-        name,
-        child: Box::new(children.pop().unwrap()),
-    }))
-}
-
-/// Parse optional attributes in `@[...]`
-fn parse_optional_attributes(input: ParseStream) -> Result<Vec<Attribute>> {
+/// Parse attributes in `@[...]`
+fn parse_attributes(input: ParseStream) -> Result<Vec<Attribute>> {
     if !input.peek(Token![@]) {
         return Ok(vec![]);
     }
@@ -186,41 +225,11 @@ fn parse_attribute(input: ParseStream) -> Result<Attribute> {
     Ok(Attribute::KeyValue { key, value })
 }
 
-/// Parse optional children in `{ ... }`
-fn parse_optional_children(input: ParseStream) -> Result<Vec<Child>> {
-    if !input.peek(Brace) {
-        return Ok(vec![]);
-    }
-
-    let content;
-    braced!(content in input);
-
-    parse_children(&content)
-}
-
-/// Parse required children in `{ ... }` - braces are mandatory
-fn parse_required_children(input: ParseStream, name: &Ident) -> Result<Vec<Child>> {
-    if !input.peek(Brace) {
-        abort!(
-            name.span(),
-            "element `{}` requires braces: `{} {{}}`",
-            name,
-            name
-        );
-    }
-
-    let content;
-    braced!(content in input);
-
-    parse_children(&content)
-}
-
 /// Parse comma-separated children
 fn parse_children(input: ParseStream) -> Result<Vec<Child>> {
     parse_comma_separated(input, parse_child)
 }
 
-/// Helper to parse comma-separated items
 fn parse_comma_separated<T>(
     input: ParseStream,
     parser: fn(ParseStream) -> Result<T>,
@@ -237,35 +246,24 @@ fn parse_child(input: ParseStream) -> Result<Child> {
         return Ok(Child::Spread(input.parse()?));
     }
 
-    // Method chain: `.method()`
     if input.peek(Token![.]) {
         input.parse::<Token![.]>()?;
         return Ok(Child::MethodChain(parse_method_chain(input)?));
     }
 
-    // Element: native, deferred, or component
-    // Only if identifier directly followed by @[...] or {}
-    if input.peek(Ident::peek_any) {
-        let fork = input.fork();
-        let name = fork.call(Ident::parse_any)?.to_string();
+    let head = parse_element_head(input)?;
+    let attributes = parse_attributes(input)?;
 
-        if (fork.peek(Brace) || fork.peek(Token![@]))
-            && (name == "deferred"
-                || NATIVE_ELEMENTS.contains(&name.as_str())
-                || name.chars().next().is_some_and(char::is_uppercase))
-        {
-            return Ok(Child::Element(parse_element(input)?));
-        }
-    }
+    let require_braces = matches!(
+        head,
+        ElementHead::Native(_) | ElementHead::Deferred(_) | ElementHead::Component(_)
+    );
 
-    let expr: Expr = input.parse()?;
+    let children = parse_element_children(input, require_braces, head.span())?;
 
-    if input.peek(Token![@]) || input.peek(Brace) {
-        let element = parse_expression_element_with_expr(input, expr, false)?;
-        return Ok(Child::Element(element));
-    }
+    let element = build_element(head, attributes, children);
 
-    Ok(Child::Expression(expr))
+    Ok(Child::Element(element))
 }
 
 /// Parse a method chain until comma.
@@ -303,21 +301,24 @@ fn parse_method_chain(input: ParseStream) -> Result<TokenStream> {
 
 #[cfg(test)]
 mod tests {
+    use quote::quote;
+    use syn::parse2;
+
     use super::*;
 
     #[test]
     fn test_parse_simple_div() {
-        let input: proc_macro2::TokenStream = quote::quote! { div {} };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let input = quote! { div {} };
+        let markup: Markup = parse2(input).unwrap();
         assert!(matches!(markup.element, Element::Native(_)));
     }
 
     #[test]
     fn test_parse_div_with_attributes() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div @[flex, w: px(200.0)] {}
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.attributes.len(), 2);
         } else {
@@ -327,12 +328,12 @@ mod tests {
 
     #[test]
     fn test_parse_div_with_children() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 "Hello",
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.children.len(), 1);
         } else {
@@ -342,13 +343,13 @@ mod tests {
 
     #[test]
     fn test_parse_div_full() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div @[flex, flex_col] {
                 "Content",
                 div @[bold] { "Nested" },
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.attributes.len(), 2);
             assert_eq!(el.children.len(), 2);
@@ -359,19 +360,19 @@ mod tests {
 
     #[test]
     fn test_parse_expression_element() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             Container::new(title) {}
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         assert!(matches!(markup.element, Element::Expression(_)));
     }
 
     #[test]
     fn test_parse_expression_element_with_attrs() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             Button::new("Click") @[style: Primary] {}
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Expression(el) = markup.element {
             assert_eq!(el.attributes.len(), 1);
         } else {
@@ -381,12 +382,12 @@ mod tests {
 
     #[test]
     fn test_parse_spread_children() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 ..items,
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.children.len(), 1);
             assert!(matches!(el.children[0], Child::Spread(_)));
@@ -397,12 +398,12 @@ mod tests {
 
     #[test]
     fn test_parse_method_chain() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 .when(cond, |d| d.flex()),
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert_eq!(el.children.len(), 1);
             assert!(matches!(el.children[0], Child::MethodChain(_)));
@@ -413,23 +414,23 @@ mod tests {
 
     #[test]
     fn test_parse_deferred() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             deferred {
                 div { "Content" },
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         assert!(matches!(markup.element, Element::Deferred(_)));
     }
 
     #[test]
     fn test_parse_method_with_generics() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 .map::<Div, _>(|d| d),
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert!(matches!(el.children[0], Child::MethodChain(_)));
         } else {
@@ -439,14 +440,17 @@ mod tests {
 
     #[test]
     fn test_parse_paren_child_without_attrs() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 (some_expr),
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
-            assert!(matches!(el.children[0], Child::Expression(_)));
+            assert!(matches!(
+                el.children[0],
+                Child::Element(Element::Expression(_))
+            ));
         } else {
             panic!("Expected Native element");
         }
@@ -454,12 +458,12 @@ mod tests {
 
     #[test]
     fn test_parse_paren_child_with_attrs() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 Button::new() @[flex] {},
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert!(matches!(
                 el.children[0],
@@ -472,17 +476,17 @@ mod tests {
 
     #[test]
     fn test_parse_component() {
-        let input: proc_macro2::TokenStream = quote::quote! { Header {} };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let input = quote! { Header {} };
+        let markup: Markup = parse2(input).unwrap();
         assert!(matches!(markup.element, Element::Component(_)));
     }
 
     #[test]
     fn test_parse_component_with_attrs() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             Header @[flex, style: Primary] {}
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Component(el) = markup.element {
             assert_eq!(el.attributes.len(), 2);
         } else {
@@ -492,13 +496,13 @@ mod tests {
 
     #[test]
     fn test_parse_component_with_children() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             Container {
                 "Content",
                 div { "Nested" },
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Component(el) = markup.element {
             assert_eq!(el.children.len(), 2);
         } else {
@@ -508,12 +512,12 @@ mod tests {
 
     #[test]
     fn test_parse_component_child() {
-        let input: proc_macro2::TokenStream = quote::quote! {
+        let input = quote! {
             div {
                 Header @[flex] {},
             }
         };
-        let markup: Markup = syn::parse2(input).unwrap();
+        let markup: Markup = parse2(input).unwrap();
         if let Element::Native(el) = markup.element {
             assert!(matches!(
                 el.children[0],

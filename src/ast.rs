@@ -63,10 +63,8 @@ pub enum Attribute {
 /// A child of an element.
 #[derive(Debug)]
 pub enum Child {
-    /// A nested element
+    /// A nested element (including all expressions)
     Element(Element),
-    /// An expression: `expr` or `"text"`
-    Expression(Expr),
     /// A spread expression: `..expr` where expr is iterable
     Spread(Expr),
     /// A method chain: `.method(args)` or `.a().b::<T>()`
